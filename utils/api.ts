@@ -2,18 +2,17 @@ import bot from "ROOT";
 import { toCamelCase } from "./camel-case";
 import { guid } from "#/genshin/utils/guid";
 import { generateDS, getDS, getDS2 } from "./ds";
-import {
-	ResponseBody
-} from "#/genshin/types";
 import * as ApiType from "#/genshin/types";
+import { ResponseBody } from "#/genshin/types";
 import { config } from "#/genshin/init";
 import { register } from "@/utils/request";
 import { getMiHoYoRandomStr } from "./random";
-import { getRandomString, getRandomNumber, randomSleep } from "@/utils/random";
+import { getRandomString, randomSleep } from "@/utils/random";
 import { getDeviceRequestBody } from "./device-fp";
 import { getRegion } from "#/genshin/utils/region";
 import { ErrorMsg } from "#/genshin/utils/promise";
 import { IDeviceData, IFpData } from "#/genshin/types/device";
+import { Md5 } from "md5-typescript";
 
 const apis = {
 	FETCH_ROLE_ID: "https://api-takumi-record.mihoyo.com/game_record/app/card/wapi/getGameRecordCard",
@@ -588,6 +587,11 @@ export async function getLTokenBySToken( stoken: string, mid: string ): Promise<
 
 // 获取设备信息
 export async function getDeviceFp( userId: string | number, cookie: string ): Promise<IFpData> {
+	const device = await bot.redis.getHash( `adachi.miHoYo.${ Md5.init( userId ) }` );
+	if ( device.deviceId && device.deviceFp ) {
+		return { device_id: device.deviceId, device_fp: device.deviceFp };
+	}
+	
 	const fpKey = `adachi.device-fp-${ userId }`;
 	
 	const deviceData: IDeviceData = await bot.redis.getHash( `adachi.device-info-${ userId }` );
